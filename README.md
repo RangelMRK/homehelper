@@ -1,60 +1,101 @@
-# 🏡 HomeHelper
+# 🏡 HomeHelper - Aplicativo de Organização Doméstica
 
-Aplicativo pessoal para auxiliar na **organização doméstica e financeira em casal**. Desenvolvido em **Java 17** com **Spring Boot**, integrando com **Firebase Firestore** e **Google Sheets API**.
-
----
-
-## 📦 Funcionalidades
-
-- ✅ Registro e soma de **gastos mensais**
-- ✅ Gerenciamento de **lista de compras**
-- ✅ **Rotina diária** com controle por dia da semana
-- ✅ Criação de **lembretes** visíveis por todos com autor identificado
-- ✅ Documentação de API com **Swagger**
+Este é um backend Java com Spring Boot desenvolvido para um aplicativo que auxilia casais (especialmente com TDAH) na organização financeira, de rotinas e lembretes da casa. O sistema é modular, seguro, e utiliza planilhas do Google como fonte para os gastos mensais.
 
 ---
 
-## 🚀 Como rodar localmente
+## ✅ Funcionalidades
 
-### 1. Clone o repositório
-```bash
-git clone https://github.com/RangelMRK/homehelper.git
-cd homehelper
+### 📊 Gastos
+- Integração com Google Sheets
+- Atualização e soma de valores por categoria e mês
+
+### 🛒 Lista de Compras
+- CRUD completo
+- Sincronizado via Firebase Firestore
+
+### 📆 Rotina Diária
+- Tarefas por dia da semana
+- Reset automático das rotinas todos os dias às 7h
+
+### 🔔 Lembretes
+- Visíveis para todos os usuários
+- Autor identificado em cada lembrete
+
+### 📋 Dashboard
+- `/dashboard/hoje`: lista de tarefas de rotina e lembretes do dia
+- Agrupado por tipo, com status de conclusão e autor
+
+### 🔐 Segurança
+- Autenticação via JWT
+- Registro e login com senha criptografada (BCrypt)
+- Todos os endpoints protegidos (exceto `/auth/**`)
+- Swagger com botão de autorização via token
+
+---
+
+## 🔧 Configuração da Planilha
+
+A estrutura da planilha de gastos é modular. Você pode copiar a planilha base e criar seu próprio arquivo de configuração.
+
+### 📎 Planilha Exemplo (readonly)
+Copie este modelo para seu Google Drive:
+👉 [https://docs.google.com/spreadsheets/d/1ESBhM42BT44FDfl1bYqAOmkWQtrOjn8eFS_hhpvJTEE](https://docs.google.com/spreadsheets/d/1ESBhM42BT44FDfl1bYqAOmkWQtrOjn8eFS_hhpvJTEE)
+
+### 🛠️ Configurando o `planilha-config.json`
+No diretório `src/main/resources/`, você deve criar um arquivo `planilha-config.json` com os campos:
+
+```json
+{
+  "colunasPorMes": {
+    "Janeiro": "F",
+    "Fevereiro": "G",
+    "Março": "H",
+    "...": "...",
+    "Dezembro": "Q"
+  },
+  "linhasPorCategoria": {
+    "Luz": 24,
+    "Água": 25,
+    "Internet": 26,
+    "Mercado": 27,
+    "...": 59
+  }
+}
 ```
 
-### 2. Configure variáveis de ambiente
+Essas colunas e linhas devem bater com a posição dos dados na sua planilha copiada. A lógica de leitura usa essa estrutura para atualizar e somar valores diretamente nas células corretas.
 
-Crie o arquivo `.env` (ou defina no seu sistema) com:
-
-```env
-SPREADSHEET_ID=ID_DA_SUA_PLANILHA
+### 🌐 Outras variáveis de ambiente obrigatórias
+No seu sistema ou `.env`, configure:
+```bash
+SPREADSHEET_ID=<ID da sua planilha Google>
 GOOGLE_KEY_PATH=src/main/resources/homehelper-key.json
-FIREBASE_CONFIG_PATH=src/main/resources/firebase-key.json
-```
-
-> 🔒 Os arquivos de chave já estão ignorados no `.gitignore`.
-
-### 3. Rode o projeto
-
-```bash
-mvn spring-boot:run
 ```
 
 ---
 
-## 📘 Documentação dos Endpoints
+## 🚀 Testando com Swagger
+Acesse `http://localhost:8080/swagger-ui.html`
 
-Acesse [http://localhost:8080/swagger-ui/index.html](http://localhost:8080/swagger-ui/index.html) após iniciar a aplicação para visualizar todos os endpoints disponíveis.
+1. Clique em **Authorize** e cole seu token JWT:
+   ```
+   Bearer eyJhbGciOiJIUz...
+   ```
+
+2. Teste os endpoints:
+    - `POST /auth/register`
+    - `POST /auth/login`
+    - `GET /dashboard/hoje`
+    - `GET /gastos/valores?mes=Janeiro`
 
 ---
 
-## 🛠️ Tecnologias Utilizadas
+## 📌 Próximos passos
+- `/dashboard/resumo` com tarefas concluídas vs pendentes
+- Histórico e agendamentos personalizados
+- Integração com app Android nativo
 
-- **Java 17**
-- **Spring Boot 3**
-- **Maven**
-- **Firebase Admin SDK**
-- **Firestore**
-- **Google Sheets API**
-- **Swagger/OpenAPI**
-- **Postman/Insomnia para testes**
+---
+
+## 👥 Feito para casais que querem mais clareza no dia a dia com leveza e organização ✨
