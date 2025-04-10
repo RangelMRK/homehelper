@@ -34,4 +34,19 @@ public class DashboardDTO {
         public String getAutor() { return autor; }
         public void setAutor(String autor) { this.autor = autor; }
     }
+
+    public static class ConcluirTarefaRequest {
+        private String id;
+        private boolean concluido;
+        private String autor;
+
+        public String getId() { return id; }
+        public void setId(String id) { this.id = id; }
+
+        public boolean isConcluido() { return concluido; }
+        public void setConcluido(boolean concluido) { this.concluido = concluido; }
+
+        public String getAutor() { return autor; }
+        public void setAutor(String autor) { this.autor = autor; }
+    }
 }

@@ -11,7 +11,9 @@ import org.springframework.web.bind.annotation.*;
 import java.time.DayOfWeek;
 import java.time.LocalDate;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.concurrent.ExecutionException;
 
 @RestController
@@ -46,11 +48,26 @@ public class DashboardController {
                     l.getId(),
                     l.getTitulo(),
                     "lembrete",
-                    true, // lembrete não é concluído
+                    true,
                     l.getAutor()
             ));
         }
 
         return resultado;
+    }
+
+    @GetMapping("/resumo")
+    public Map<String, Object> resumoDoDia() throws ExecutionException, InterruptedException {
+        List<TarefaRotina> rotinas = rotinaService.listarDoDia();
+
+        long concluidas = rotinas.stream().filter(TarefaRotina::isConcluidoHoje).count();
+        long total = rotinas.size();
+
+        Map<String, Object> resposta = new HashMap<>();
+        resposta.put("total", total);
+        resposta.put("concluidas", concluidas);
+        resposta.put("pendentes", total - concluidas);
+
+        return resposta;
     }
 }

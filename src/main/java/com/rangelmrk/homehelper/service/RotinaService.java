@@ -5,7 +5,7 @@ import com.google.cloud.firestore.Firestore;
 import com.google.cloud.firestore.QueryDocumentSnapshot;
 import com.google.cloud.firestore.QuerySnapshot;
 import com.google.firebase.cloud.FirestoreClient;
-import com.rangelmrk.homehelper.dto.RotinaDTO;
+import com.rangelmrk.homehelper.dto.DashboardDTO;
 import com.rangelmrk.homehelper.model.TarefaRotina;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
@@ -35,36 +35,17 @@ public class RotinaService {
                 .collect(Collectors.toList());
     }
 
-    public void adicionar(RotinaDTO.CriarRotinaRequest dto) {
-        validar(dto);
-
+    public void adicionar(TarefaRotina nova) {
         Firestore db = FirestoreClient.getFirestore();
-        TarefaRotina nova = new TarefaRotina();
         nova.setId(UUID.randomUUID().toString());
-        nova.setNome(dto.getNome());
-        nova.setDescricao(dto.getDescricao());
-        nova.setRepetir(dto.isRepetir());
         nova.setConcluidoHoje(false);
         nova.setUltimaAtualizacao(null);
 
-        if (dto.isRepetir()) {
-            if (dto.getDias() == null || dto.getDias().isEmpty()) {
-                nova.setDias(Stream.of(DayOfWeek.values()).map(DayOfWeek::name).collect(Collectors.toList()));
-            } else {
-                nova.setDias(dto.getDias());
-            }
-        } else {
-            nova.setDias(dto.getDias());
+        if (nova.isRepetir() && (nova.getDias() == null || nova.getDias().isEmpty())) {
+            nova.setDias(Stream.of(DayOfWeek.values()).map(DayOfWeek::name).collect(Collectors.toList()));
         }
 
         db.collection(COLLECTION).document(nova.getId()).set(nova);
-    }
-    public void concluirTarefa(String id) {
-        Firestore db = FirestoreClient.getFirestore();
-        Map<String, Object> update = new HashMap<>();
-        update.put("concluidoHoje", true);
-        update.put("ultimaAtualizacao", LocalDate.now().toString());
-        db.collection(COLLECTION).document(id).update(update);
     }
 
     public void remover(String id) {
@@ -78,25 +59,33 @@ public class RotinaService {
                 .forEach(doc -> doc.getReference().delete());
     }
 
-    private void validar(RotinaDTO.CriarRotinaRequest dto) {
-        if (dto.getNome() == null || dto.getNome().trim().isEmpty()) {
-            throw new IllegalArgumentException("O campo 'nome' é obrigatório.");
-        }
-
-        if (dto.isRepetir()) {
-            // dias é opcional aqui, pois pode ser preenchido com todos os dias
-            return;
-        }
-
-        if (dto.getDias() == null || dto.getDias().isEmpty()) {
-            throw new IllegalArgumentException("Você deve informar ao menos um dia para a tarefa não repetitiva.");
-        }
+    public void concluirTarefa(DashboardDTO.ConcluirTarefaRequest dto) {
+        Firestore db = FirestoreClient.getFirestore();
+        Map<String, Object> update = new HashMap<>();
+        update.put("concluidoHoje", true);
+        update.put("concluidoPor", dto.getAutor());
+        update.put("ultimaAtualizacao", LocalDate.now().toString());
+        db.collection(COLLECTION).document(dto.getId()).update(update);
     }
 
-    @Scheduled(cron = "0 0 7 * * *", zone = "America/Sao_Paulo")
-    public void resetarRotinasDiariamente() throws ExecutionException, InterruptedException {
-        System.out.println("🔁 Resetando rotinas às 7h...");
+    public void alternarConclusao(DashboardDTO.ConcluirTarefaRequest dto) {
+        Firestore db = FirestoreClient.getFirestore();
+        Map<String, Object> update = new HashMap<>();
 
+        if (dto.isConcluido()) {
+            update.put("concluidoHoje", true);
+            update.put("concluidoPor", dto.getAutor());
+            update.put("ultimaAtualizacao", LocalDate.now().toString());
+        } else {
+            update.put("concluidoHoje", false);
+            update.put("concluidoPor", null);
+            update.put("ultimaAtualizacao", null);
+        }
+
+        db.collection(COLLECTION).document(dto.getId()).update(update);
+    }
+
+    public void resetarRotinasDiariamente() throws ExecutionException, InterruptedException {
         Firestore db = FirestoreClient.getFirestore();
         ApiFuture<QuerySnapshot> future = db.collection(COLLECTION).get();
         List<QueryDocumentSnapshot> documentos = future.get().getDocuments();
@@ -106,12 +95,9 @@ public class RotinaService {
 
             if (rotina.isRepetir() && rotina.isConcluidoHoje()) {
                 doc.getReference().update("concluidoHoje", false);
+                doc.getReference().update("concluidoPor", null);
+                doc.getReference().update("ultimaAtualizacao", null);
             }
         }
-
-        System.out.println("✅ Rotinas resetadas com sucesso.");
     }
-
-
-
 }

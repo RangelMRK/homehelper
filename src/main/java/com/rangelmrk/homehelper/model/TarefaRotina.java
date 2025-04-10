@@ -9,13 +9,13 @@ public class TarefaRotina {
     private List<String> dias;
     private boolean repetir;
     private boolean concluidoHoje;
+    private String concluidoPor;
     private String ultimaAtualizacao;
 
     public TarefaRotina() {}
 
     public TarefaRotina(String id, String descricao, List<String> dias, boolean repetir, boolean concluidoHoje, String ultimaAtualizacao) {
         this.id = id;
-        this.nome = nome;
         this.descricao = descricao;
         this.dias = dias;
         this.repetir = repetir;
@@ -24,18 +24,26 @@ public class TarefaRotina {
     }
 
     public String getId() { return id; }
-    public String getNome() { return nome; }
-    public String getDescricao() { return descricao; }
-    public List<String> getDias() { return dias; }
-    public boolean isRepetir() { return repetir; }
-    public boolean isConcluidoHoje() { return concluidoHoje; }
-    public String getUltimaAtualizacao() { return ultimaAtualizacao; }
-
     public void setId(String id) { this.id = id; }
+
+    public String getNome() { return nome; }
     public void setNome(String nome) { this.nome = nome; }
+
+    public String getDescricao() { return descricao; }
     public void setDescricao(String descricao) { this.descricao = descricao; }
+
+    public List<String> getDias() { return dias; }
     public void setDias(List<String> dias) { this.dias = dias; }
+
+    public boolean isRepetir() { return repetir; }
     public void setRepetir(boolean repetir) { this.repetir = repetir; }
+
+    public boolean isConcluidoHoje() { return concluidoHoje; }
     public void setConcluidoHoje(boolean concluidoHoje) { this.concluidoHoje = concluidoHoje; }
+
+    public String getUltimaAtualizacao() { return ultimaAtualizacao; }
     public void setUltimaAtualizacao(String ultimaAtualizacao) { this.ultimaAtualizacao = ultimaAtualizacao; }
+
+    public String getConcluidoPor() { return concluidoPor; }
+    public void setConcluidoPor(String concluidoPor) { this.concluidoPor = concluidoPor; }
 }
