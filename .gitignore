@@ -38,6 +38,7 @@ bin/
 
 src/main/resources/homehelper-key.json
 src/main/resources/firebase-key.json
+src/main/resources/planilha-config.json
 *.env
 
 ### Mac OS ###

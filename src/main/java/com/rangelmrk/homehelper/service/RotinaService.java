@@ -1,9 +1,7 @@
 package com.rangelmrk.homehelper.service;
 
 import com.google.api.core.ApiFuture;
-import com.google.cloud.firestore.Firestore;
-import com.google.cloud.firestore.QueryDocumentSnapshot;
-import com.google.cloud.firestore.QuerySnapshot;
+import com.google.cloud.firestore.*;
 import com.google.firebase.cloud.FirestoreClient;
 import com.rangelmrk.homehelper.dto.DashboardDTO;
 import com.rangelmrk.homehelper.model.TarefaRotina;
@@ -21,18 +19,37 @@ import java.util.stream.Stream;
 public class RotinaService {
 
     private static final String COLLECTION = "rotinas";
+    private static final String META_COLLECTION = "meta";
+    private static final String RESET_DOC_ID = "reset_diario";
 
     public List<TarefaRotina> listarDoDia() throws ExecutionException, InterruptedException {
+        this.verificarEResetarSeNecessario();
         Firestore db = FirestoreClient.getFirestore();
-        List<TarefaRotina> todas = db.collection(COLLECTION).get().get().getDocuments().stream()
-                .map(doc -> doc.toObject(TarefaRotina.class))
-                .collect(Collectors.toList());
-
+        List<TarefaRotina> todas = listarTodas();
         DayOfWeek hoje = LocalDate.now().getDayOfWeek();
-
         return todas.stream()
                 .filter(r -> r.getDias() != null && r.getDias().contains(hoje.name()))
                 .collect(Collectors.toList());
+    }
+
+    public List<TarefaRotina> listarTodas() throws ExecutionException, InterruptedException {
+        Firestore db = FirestoreClient.getFirestore();
+        return db.collection(COLLECTION).get().get().getDocuments().stream()
+                .map(doc -> doc.toObject(TarefaRotina.class))
+                .collect(Collectors.toList());
+    }
+
+    private void verificarEResetarSeNecessario() throws ExecutionException, InterruptedException {
+        Firestore db = FirestoreClient.getFirestore();
+        DocumentReference ref = db.collection(META_COLLECTION).document(RESET_DOC_ID);
+
+        DocumentSnapshot snapshot = ref.get().get();
+        String hoje = LocalDate.now().toString();
+
+        if (!snapshot.exists() || !hoje.equals(snapshot.getString("ultimaData"))) {
+            this.resetarRotinasDiariamente();
+            ref.set(Map.of("ultimaData", hoje));
+        }
     }
 
     public void adicionar(TarefaRotina nova) {
@@ -40,6 +57,7 @@ public class RotinaService {
         nova.setId(UUID.randomUUID().toString());
         nova.setConcluidoHoje(false);
         nova.setUltimaAtualizacao(null);
+        nova.setHistorico(new ArrayList<>());
 
         if (nova.isRepetir() && (nova.getDias() == null || nova.getDias().isEmpty())) {
             nova.setDias(Stream.of(DayOfWeek.values()).map(DayOfWeek::name).collect(Collectors.toList()));
@@ -59,30 +77,45 @@ public class RotinaService {
                 .forEach(doc -> doc.getReference().delete());
     }
 
-    public void concluirTarefa(DashboardDTO.ConcluirTarefaRequest dto) {
-        Firestore db = FirestoreClient.getFirestore();
-        Map<String, Object> update = new HashMap<>();
-        update.put("concluidoHoje", true);
-        update.put("concluidoPor", dto.getAutor());
-        update.put("ultimaAtualizacao", LocalDate.now().toString());
-        db.collection(COLLECTION).document(dto.getId()).update(update);
-    }
-
     public void alternarConclusao(DashboardDTO.ConcluirTarefaRequest dto) {
         Firestore db = FirestoreClient.getFirestore();
-        Map<String, Object> update = new HashMap<>();
+        DocumentReference docRef = db.collection(COLLECTION).document(dto.getId());
+        String hoje = LocalDate.now().toString();
 
         if (dto.isConcluido()) {
-            update.put("concluidoHoje", true);
-            update.put("concluidoPor", dto.getAutor());
-            update.put("ultimaAtualizacao", LocalDate.now().toString());
-        } else {
-            update.put("concluidoHoje", false);
-            update.put("concluidoPor", null);
-            update.put("ultimaAtualizacao", null);
-        }
+            docRef.update("concluidoHoje", true);
+            docRef.update("concluidoPor", dto.getAutor());
+            docRef.update("ultimaAtualizacao", hoje);
 
-        db.collection(COLLECTION).document(dto.getId()).update(update);
+            try {
+                DocumentSnapshot snapshot = docRef.get().get();
+                TarefaRotina rotina = snapshot.toObject(TarefaRotina.class);
+                List<String> historico = rotina.getHistorico() != null ? rotina.getHistorico() : new ArrayList<>();
+                if (!historico.contains(hoje)) {
+                    historico.add(hoje);
+                    docRef.update("historico", historico);
+                }
+            } catch (Exception e) {
+                e.printStackTrace();
+            }
+
+        } else {
+            docRef.update("concluidoHoje", false);
+            docRef.update("concluidoPor", null);
+            docRef.update("ultimaAtualizacao", null);
+
+            try {
+                DocumentSnapshot snapshot = docRef.get().get();
+                TarefaRotina rotina = snapshot.toObject(TarefaRotina.class);
+                List<String> historico = rotina.getHistorico();
+                if (historico != null && historico.contains(hoje)) {
+                    historico.remove(hoje);
+                    docRef.update("historico", historico);
+                }
+            } catch (Exception e) {
+                e.printStackTrace();
+            }
+        }
     }
 
     public void resetarRotinasDiariamente() throws ExecutionException, InterruptedException {

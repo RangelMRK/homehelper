@@ -10,6 +10,7 @@ import org.springframework.web.bind.annotation.*;
 
 import java.time.DayOfWeek;
 import java.time.LocalDate;
+import java.time.temporal.TemporalAdjusters;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -69,5 +70,40 @@ public class DashboardController {
         resposta.put("pendentes", total - concluidas);
 
         return resposta;
+    }
+
+    @GetMapping("/semana")
+    public Map<String, Object> resumoDaSemana() throws ExecutionException, InterruptedException {
+        List<TarefaRotina> todas = rotinaService.listarTodas();
+
+        LocalDate hoje = LocalDate.now();
+        LocalDate inicioSemana = hoje.with(TemporalAdjusters.previousOrSame(DayOfWeek.MONDAY));
+        LocalDate fimSemana = hoje.with(TemporalAdjusters.nextOrSame(DayOfWeek.SUNDAY));
+
+        int totalRealizado = 0;
+        int totalPossivel = 0;
+
+        for (TarefaRotina rotina : todas) {
+            if (rotina.getDias() == null || rotina.getHistorico() == null) continue;
+
+            for (LocalDate dia = inicioSemana; !dia.isAfter(fimSemana); dia = dia.plusDays(1)) {
+                DayOfWeek diaSemana = dia.getDayOfWeek();
+                if (rotina.getDias().contains(diaSemana.name())) {
+                    totalPossivel++;
+                    if (rotina.getHistorico().contains(dia.toString())) {
+                        totalRealizado++;
+                    }
+                }
+            }
+        }
+
+        double percentual = totalPossivel > 0 ? (totalRealizado * 100.0) / totalPossivel : 0.0;
+
+        Map<String, Object> resumo = new HashMap<>();
+        resumo.put("totalPossivel", totalPossivel);
+        resumo.put("totalRealizado", totalRealizado);
+        resumo.put("percentual", percentual);
+
+        return resumo;
     }
 }

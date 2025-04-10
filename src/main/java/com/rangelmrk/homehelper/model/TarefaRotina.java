@@ -11,17 +11,9 @@ public class TarefaRotina {
     private boolean concluidoHoje;
     private String concluidoPor;
     private String ultimaAtualizacao;
+    private List<String> historico; // <- NOVO
 
     public TarefaRotina() {}
-
-    public TarefaRotina(String id, String descricao, List<String> dias, boolean repetir, boolean concluidoHoje, String ultimaAtualizacao) {
-        this.id = id;
-        this.descricao = descricao;
-        this.dias = dias;
-        this.repetir = repetir;
-        this.concluidoHoje = concluidoHoje;
-        this.ultimaAtualizacao = ultimaAtualizacao;
-    }
 
     public String getId() { return id; }
     public void setId(String id) { this.id = id; }
@@ -41,9 +33,12 @@ public class TarefaRotina {
     public boolean isConcluidoHoje() { return concluidoHoje; }
     public void setConcluidoHoje(boolean concluidoHoje) { this.concluidoHoje = concluidoHoje; }
 
+    public String getConcluidoPor() { return concluidoPor; }
+    public void setConcluidoPor(String concluidoPor) { this.concluidoPor = concluidoPor; }
+
     public String getUltimaAtualizacao() { return ultimaAtualizacao; }
     public void setUltimaAtualizacao(String ultimaAtualizacao) { this.ultimaAtualizacao = ultimaAtualizacao; }
 
-    public String getConcluidoPor() { return concluidoPor; }
-    public void setConcluidoPor(String concluidoPor) { this.concluidoPor = concluidoPor; }
+    public List<String> getHistorico() { return historico; }
+    public void setHistorico(List<String> historico) { this.historico = historico; }
 }
