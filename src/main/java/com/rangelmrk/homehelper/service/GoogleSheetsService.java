@@ -8,9 +8,8 @@ import com.google.api.services.sheets.v4.Sheets;
 import com.google.api.services.sheets.v4.model.ValueRange;
 import com.google.auth.http.HttpCredentialsAdapter;
 import com.google.auth.oauth2.GoogleCredentials;
-import com.rangelmrk.homehelper.util.MapaColunas;
-import com.rangelmrk.homehelper.util.MapaLinhas;
 import jakarta.annotation.PostConstruct;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
 import java.io.FileInputStream;
@@ -25,6 +24,9 @@ public class GoogleSheetsService {
     private static final JsonFactory JSON_FACTORY = JacksonFactory.getDefaultInstance();
     private String spreadsheetId;
     private Sheets sheets;
+
+    @Autowired
+    private PlanilhaConfigService planilhaConfig;
 
     @PostConstruct
     public void init() {
@@ -54,8 +56,8 @@ public class GoogleSheetsService {
     }
 
     private String getCelula(String categoria, String mes, int linhaFixa) {
-        String coluna = MapaColunas.getMesColuna().get(mes);
-        int linha = (linhaFixa > 0) ? linhaFixa : MapaLinhas.getCategoriaLinha().get(categoria);
+        String coluna = planilhaConfig.getColunaDoMes(mes);
+        int linha = (linhaFixa > 0) ? linhaFixa : planilhaConfig.getLinhaDaCategoria(categoria);
 
         if (coluna == null || linha == 0) {
             throw new IllegalArgumentException("Mês ou categoria inválidos: " + mes + ", " + categoria);
@@ -76,7 +78,6 @@ public class GoogleSheetsService {
             String raw = response.getValues().get(0).get(0).toString();
             return Double.parseDouble(raw.replace("R$", "").replace(",", ".").replace(" ", "").replace("%", ""));
         } catch (Exception e) {
-            System.out.println("⚠️ Erro ao ler valor da célula: " + e.getMessage());
             return 0;
         }
     }
@@ -92,7 +93,6 @@ public class GoogleSheetsService {
                     .setValueInputOption("USER_ENTERED")
                     .execute();
 
-            System.out.printf("✅ Valor atualizado: %s = %.2f%n", celula, valor);
         } catch (Exception e) {
             e.printStackTrace();
         }
@@ -109,8 +109,8 @@ public class GoogleSheetsService {
     }
 
     public Map<String, Object> listarTotaisPorMes(String mes) {
-        Map<String, String> colunas = MapaColunas.getMesColuna();
-        Map<String, Integer> linhas = MapaLinhas.getCategoriaLinha();
+        Map<String, String> colunas = planilhaConfig.getTodasColunas();
+        Map<String, Integer> linhas = planilhaConfig.getTodasLinhas();
 
         String coluna = colunas.get(mes);
         if (coluna == null) {
