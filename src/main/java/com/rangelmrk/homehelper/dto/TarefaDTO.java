@@ -5,21 +5,12 @@ import java.util.List;
 public class TarefaDTO {
 
     public static class CriarTarefa {
-        private String tipo; // ROTINA ou LEMBRETE
         private String nome;
         private String descricao;
         private String autor;
-
-        // campos para lembrete
-        private String frequencia; // UNICO, DIARIO, SEMANAL
-        private String dataAlvo;
-
-        // campos para rotina
-        private List<String> dias;
-        private boolean repetir;
-
-        public String getTipo() { return tipo; }
-        public void setTipo(String tipo) { this.tipo = tipo; }
+        private String dataAlvo; // Para tarefas únicas
+        private List<String> dias; // Para tarefas repetitivas (dias da semana)
+        private boolean repetir; // Se a tarefa for repetitiva ou não
 
         public String getNome() { return nome; }
         public void setNome(String nome) { this.nome = nome; }
@@ -29,9 +20,6 @@ public class TarefaDTO {
 
         public String getAutor() { return autor; }
         public void setAutor(String autor) { this.autor = autor; }
-
-        public String getFrequencia() { return frequencia; }
-        public void setFrequencia(String frequencia) { this.frequencia = frequencia; }
 
         public String getDataAlvo() { return dataAlvo; }
         public void setDataAlvo(String dataAlvo) { this.dataAlvo = dataAlvo; }

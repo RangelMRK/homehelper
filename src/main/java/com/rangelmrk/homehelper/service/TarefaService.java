@@ -1,70 +1,71 @@
 package com.rangelmrk.homehelper.service;
 
 import com.google.api.core.ApiFuture;
-import com.google.cloud.firestore.*;
 import com.google.firebase.cloud.FirestoreClient;
+import com.google.cloud.firestore.*;
 import com.rangelmrk.homehelper.model.Tarefa;
 import org.springframework.stereotype.Service;
 
 import java.time.DayOfWeek;
-import java.time.LocalDate;
+import java.time.temporal.TemporalAdjusters;
 import java.util.*;
-import java.util.concurrent.ExecutionException;
 import java.util.stream.Collectors;
+import java.util.concurrent.ExecutionException;
+import java.time.LocalDate;
 
 @Service
 public class TarefaService {
 
     private static final String COLLECTION = "tarefas";
     private static final String META_COLLECTION = "meta";
-    private static final String RESET_DOC_ID = "reset_diario";
-
-    public List<Tarefa> listarTodas() throws ExecutionException, InterruptedException {
-        Firestore db = FirestoreClient.getFirestore();
-        return db.collection(COLLECTION).get().get().getDocuments().stream()
-                .map(doc -> doc.toObject(Tarefa.class))
-                .collect(Collectors.toList());
-    }
-
-    public List<Tarefa> listarDoDia() throws ExecutionException, InterruptedException {
-        this.verificarEResetarSeNecessario();
-
-        LocalDate hoje = LocalDate.now();
-        DayOfWeek diaSemana = hoje.getDayOfWeek();
-        String dataHoje = hoje.toString();
-
-        return listarTodas().stream()
-                .filter(tarefa -> tarefa.getTipo() != null &&
-                        ((tarefa.getTipo() == Tarefa.TipoTarefa.ROTINA &&
-                                tarefa.getDias() != null && tarefa.getDias().contains(diaSemana.name())) ||
-                                (tarefa.getTipo() == Tarefa.TipoTarefa.LEMBRETE &&
-                                        isLembreteValidoHoje(tarefa, dataHoje, diaSemana))))
-                .collect(Collectors.toList());
-    }
-
-    private boolean isLembreteValidoHoje(Tarefa tarefa, String dataHoje, DayOfWeek diaSemana) {
-        if (tarefa.getFrequencia() == null || tarefa.getDataAlvo() == null) return false;
-
-        return switch (tarefa.getFrequencia().toUpperCase()) {
-            case "DIARIO" -> true;
-            case "SEMANAL" -> {
-                LocalDate alvo = LocalDate.parse(tarefa.getDataAlvo());
-                yield diaSemana == alvo.getDayOfWeek();
-            }
-            case "UNICO" -> dataHoje.equals(tarefa.getDataAlvo());
-            default -> false;
-        };
-    }
+    private static final String RESET_DOC_ID = "reset_meta";
 
     public void adicionar(Tarefa nova) {
         Firestore db = FirestoreClient.getFirestore();
         nova.setId(UUID.randomUUID().toString());
-        if (nova.getTipo() == Tarefa.TipoTarefa.ROTINA) {
-            nova.setConcluidoHoje(false);
-            nova.setUltimaAtualizacao(null);
-            nova.setHistorico(new ArrayList<>());
+
+        // Se for uma tarefa repetitiva, garantir que não cria para datas passadas
+        if (nova.isRepetir()) {
+            List<String> diasValidos = nova.getDias().stream()
+                    .filter(dia -> {
+                        LocalDate hoje = LocalDate.now();
+                        LocalDate dataProximaRepeticao = hoje.with(TemporalAdjusters.next(DayOfWeek.valueOf(dia)));
+                        return !dataProximaRepeticao.isBefore(hoje);
+                    })
+                    .collect(Collectors.toList());
+            nova.setDias(diasValidos);
         }
+
         db.collection(COLLECTION).document(nova.getId()).set(nova);
+    }
+
+    public List<Tarefa> listarDoDia() throws ExecutionException, InterruptedException {
+        Firestore db = FirestoreClient.getFirestore();
+        ApiFuture<QuerySnapshot> future = db.collection(COLLECTION).get();
+        List<QueryDocumentSnapshot> documents = future.get().getDocuments();
+
+        LocalDate hoje = LocalDate.now();
+        DayOfWeek diaSemana = hoje.getDayOfWeek();
+
+        return documents.stream()
+                .map(doc -> doc.toObject(Tarefa.class))
+                .filter(tarefa -> tarefa.getDias() != null && tarefa.getDias().contains(diaSemana.name()) ||
+                        (tarefa.getDataAlvo() != null && tarefa.getDataAlvo().equals(hoje.toString())))
+                .collect(Collectors.toList());
+    }
+
+    public List<Tarefa> listarSemanaExpandida() throws ExecutionException, InterruptedException {
+        Firestore db = FirestoreClient.getFirestore();
+        ApiFuture<QuerySnapshot> future = db.collection(COLLECTION).get();
+        List<QueryDocumentSnapshot> documents = future.get().getDocuments();
+
+        LocalDate hoje = LocalDate.now();
+        DayOfWeek diaSemana = hoje.getDayOfWeek();
+
+        return documents.stream()
+                .map(doc -> doc.toObject(Tarefa.class))
+                .filter(t -> t.getDias().contains(diaSemana.name()) || t.getDataAlvo().equals(hoje.toString()))
+                .collect(Collectors.toList());
     }
 
     public void remover(String id) {
@@ -72,35 +73,30 @@ public class TarefaService {
         db.collection(COLLECTION).document(id).delete();
     }
 
+    public void removerTodas() throws ExecutionException, InterruptedException {
+        Firestore db = FirestoreClient.getFirestore();
+        ApiFuture<QuerySnapshot> future = db.collection(COLLECTION).get();
+        for (QueryDocumentSnapshot doc : future.get().getDocuments()) {
+            doc.getReference().delete();
+        }
+    }
+
     public void alternarConclusao(String id, boolean concluido, String autor) {
         Firestore db = FirestoreClient.getFirestore();
         DocumentReference ref = db.collection(COLLECTION).document(id);
-        String hoje = LocalDate.now().toString();
 
         try {
             Tarefa tarefa = ref.get().get().toObject(Tarefa.class);
-            if (tarefa == null || tarefa.getTipo() != Tarefa.TipoTarefa.ROTINA) return;
+            if (tarefa == null) return;
 
             Map<String, Object> update = new HashMap<>();
 
             if (concluido) {
-                update.put("concluidoHoje", true);
-                update.put("concluidoPor", autor);
-                update.put("ultimaAtualizacao", hoje);
-
-                List<String> historico = tarefa.getHistorico() != null ? tarefa.getHistorico() : new ArrayList<>();
-                if (!historico.contains(hoje)) historico.add(hoje);
-                update.put("historico", historico);
+                update.put("concluido", true);
+                update.put("ultimaAtualizacao", LocalDate.now().toString());
             } else {
-                update.put("concluidoHoje", false);
-                update.put("concluidoPor", null);
+                update.put("concluido", false);
                 update.put("ultimaAtualizacao", null);
-
-                List<String> historico = tarefa.getHistorico();
-                if (historico != null && historico.contains(hoje)) {
-                    historico.remove(hoje);
-                    update.put("historico", historico);
-                }
             }
 
             ref.update(update);
@@ -108,6 +104,7 @@ public class TarefaService {
             e.printStackTrace();
         }
     }
+
 
     private void verificarEResetarSeNecessario() throws ExecutionException, InterruptedException {
         Firestore db = FirestoreClient.getFirestore();
@@ -125,12 +122,20 @@ public class TarefaService {
     private void resetarRotinas() throws ExecutionException, InterruptedException {
         Firestore db = FirestoreClient.getFirestore();
         for (Tarefa tarefa : listarTodas()) {
-            if (tarefa.getTipo() == Tarefa.TipoTarefa.ROTINA && tarefa.isConcluidoHoje()) {
+            if (tarefa.isRepetir() && tarefa.isConcluido()) {
                 DocumentReference ref = db.collection(COLLECTION).document(tarefa.getId());
-                ref.update("concluidoHoje", false);
-                ref.update("concluidoPor", null);
+                ref.update("concluido", false);
                 ref.update("ultimaAtualizacao", null);
             }
         }
+    }
+
+
+    public List<Tarefa> listarTodas() throws ExecutionException, InterruptedException {
+        Firestore db = FirestoreClient.getFirestore();
+        ApiFuture<QuerySnapshot> future = db.collection(COLLECTION).get();
+        return future.get().getDocuments().stream()
+                .map(doc -> doc.toObject(Tarefa.class))
+                .collect(Collectors.toList());
     }
 }

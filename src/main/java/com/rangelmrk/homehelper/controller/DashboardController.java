@@ -8,7 +8,9 @@ import org.springframework.web.bind.annotation.*;
 import java.time.DayOfWeek;
 import java.time.LocalDate;
 import java.time.temporal.TemporalAdjusters;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Map;
 import java.util.concurrent.ExecutionException;
 
 @RestController
@@ -27,8 +29,7 @@ public class DashboardController {
             resultado.add(Map.of(
                     "id", t.getId(),
                     "descricao", t.getDescricao(),
-                    "tipo", t.getTipo().name().toLowerCase(),
-                    "concluido", t.getTipo() == Tarefa.TipoTarefa.ROTINA ? t.isConcluidoHoje() : true,
+                    "concluido", t.isConcluido(),
                     "autor", t.getAutor()
             ));
         }
@@ -39,8 +40,8 @@ public class DashboardController {
     @GetMapping("/resumo")
     public Map<String, Object> resumoDoDia() throws ExecutionException, InterruptedException {
         List<Tarefa> tarefas = tarefaService.listarDoDia();
-        long total = tarefas.stream().filter(t -> t.getTipo() == Tarefa.TipoTarefa.ROTINA).count();
-        long concluidas = tarefas.stream().filter(t -> t.getTipo() == Tarefa.TipoTarefa.ROTINA && t.isConcluidoHoje()).count();
+        long total = tarefas.stream().filter(t -> t.getDias() != null).count(); // Filtrando para tarefas repetitivas
+        long concluidas = tarefas.stream().filter(t -> t.isConcluido()).count();
 
         return Map.of(
                 "total", total,
@@ -51,7 +52,7 @@ public class DashboardController {
 
     @GetMapping("/semana")
     public Map<String, Object> resumoDaSemana() throws ExecutionException, InterruptedException {
-        List<Tarefa> todas = tarefaService.listarTodas();
+        List<Tarefa> todas = tarefaService.listarSemanaExpandida();
         LocalDate hoje = LocalDate.now();
         LocalDate inicio = hoje.with(TemporalAdjusters.previousOrSame(DayOfWeek.MONDAY));
         LocalDate fim = hoje.with(TemporalAdjusters.nextOrSame(DayOfWeek.SUNDAY));
@@ -60,12 +61,12 @@ public class DashboardController {
         int totalRealizado = 0;
 
         for (Tarefa t : todas) {
-            if (t.getTipo() != Tarefa.TipoTarefa.ROTINA || t.getDias() == null) continue;
+            if (t.getDias() == null) continue;
 
             for (LocalDate dia = inicio; !dia.isAfter(fim); dia = dia.plusDays(1)) {
                 if (t.getDias().contains(dia.getDayOfWeek().name())) {
                     totalPossivel++;
-                    if (t.getHistorico() != null && t.getHistorico().contains(dia.toString())) {
+                    if (t.isConcluido()) {
                         totalRealizado++;
                     }
                 }
@@ -83,7 +84,7 @@ public class DashboardController {
 
     @GetMapping("/semana/detalhado")
     public Map<String, Object> resumoPorDia() throws ExecutionException, InterruptedException {
-        List<Tarefa> todas = tarefaService.listarTodas();
+        List<Tarefa> todas = tarefaService.listarSemanaExpandida();
         LocalDate hoje = LocalDate.now();
         LocalDate inicio = hoje.with(TemporalAdjusters.previousOrSame(DayOfWeek.MONDAY));
         LocalDate fim = hoje.with(TemporalAdjusters.nextOrSame(DayOfWeek.SUNDAY));
@@ -97,12 +98,10 @@ public class DashboardController {
             String semana = dia.getDayOfWeek().name();
 
             for (Tarefa t : todas) {
-                if (t.getTipo() != Tarefa.TipoTarefa.ROTINA || t.getDias() == null) continue;
-                if (t.getDias().contains(semana)) {
-                    previstas++;
-                    if (t.getHistorico() != null && t.getHistorico().contains(diaStr)) {
-                        concluidas++;
-                    }
+                if (t.getDias() == null || !t.getDias().contains(semana)) continue;
+                previstas++;
+                if (t.isConcluido()) {
+                    concluidas++;
                 }
             }
 
