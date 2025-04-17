@@ -27,18 +27,19 @@ public class ListaComprasService {
     }
 
     public void adicionarItem(ItemListaCompra item) {
-        db.collection(COLLECTION).document(item.getNome()).set(item);
+        String id = UUID.randomUUID().toString();
+        item.setId(id);
+        db.collection(COLLECTION).document(id).set(item);
     }
 
-    public void atualizarStatus(String nome, boolean comprado) {
-        Map<String, Object> update = new HashMap<>();
-        update.put("comprado", comprado);
-        db.collection(COLLECTION).document(nome).update(update);
+    public void atualizarStatus(String id, boolean comprado) {
+        db.collection(COLLECTION).document(id).update("comprado", comprado);
     }
 
-    public void removerItem(String nome) {
-        db.collection(COLLECTION).document(nome).delete();
+    public void removerItem(String id) {
+        db.collection(COLLECTION).document(id).delete();
     }
+
 
     public void limparLista() throws ExecutionException, InterruptedException {
         ApiFuture<QuerySnapshot> future = db.collection(COLLECTION).get();

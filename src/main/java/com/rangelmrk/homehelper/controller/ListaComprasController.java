@@ -1,6 +1,6 @@
 package com.rangelmrk.homehelper.controller;
 
-import com.rangelmrk.homehelper.dto.ListaComprasDTO;
+import com.rangelmrk.homehelper.dto.ItemListaCompraDTO;
 import com.rangelmrk.homehelper.model.ItemListaCompra;
 import com.rangelmrk.homehelper.service.ListaComprasService;
 import io.swagger.v3.oas.annotations.Operation;
@@ -23,8 +23,10 @@ class ListaComprasController {
 
     @Operation(summary = "Lista todos os itens da lista de compras")
     @GetMapping
-    public List<ItemListaCompra> listar() throws ExecutionException, InterruptedException {
-        return service.listarItens();
+    public List<ItemListaCompraDTO> listar() throws ExecutionException, InterruptedException {
+        return service.listarItens().stream()
+                .map(i -> new ItemListaCompraDTO(i.getId(), i.getNome(), i.isComprado()))
+                .toList();
     }
 
     @Operation(summary = "Adiciona um novo item à lista de compras")
@@ -34,15 +36,15 @@ class ListaComprasController {
     }
 
     @Operation(summary = "Atualiza o status de um item para comprado ou não")
-    @PutMapping("/{nome}")
-    public void atualizar(@PathVariable String nome, @RequestParam boolean comprado) {
-        service.atualizarStatus(nome, comprado);
+    @PutMapping("/{id}")
+    public void atualizar(@PathVariable String id, @RequestParam boolean comprado) {
+        service.atualizarStatus(id, comprado);
     }
 
     @Operation(summary = "Remove um item da lista de compras")
-    @DeleteMapping("/{nome}")
-    public void remover(@PathVariable String nome) {
-        service.removerItem(nome);
+    @DeleteMapping("/{id}")
+    public void remover(@PathVariable String id) {
+        service.removerItem(id);
     }
 
     @Operation(summary = "Remove todos os itens da lista de compras")

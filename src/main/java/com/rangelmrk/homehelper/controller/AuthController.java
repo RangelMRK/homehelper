@@ -1,6 +1,5 @@
 package com.rangelmrk.homehelper.controller;
 
-import com.rangelmrk.homehelper.dto.AuthDTO;
 import com.rangelmrk.homehelper.dto.UsuarioDTO;
 import com.rangelmrk.homehelper.model.Usuario;
 import com.rangelmrk.homehelper.service.JwtService;
@@ -31,10 +30,10 @@ public class AuthController {
     private final BCryptPasswordEncoder passwordEncoder = new BCryptPasswordEncoder();
 
     @PostMapping("/login")
-    public ResponseEntity<?> login(@RequestBody AuthDTO.LoginRequest creds) throws ExecutionException, InterruptedException {
-        Usuario usuario = usuarioService.buscarPorUsername(creds.getUsername());
+    public ResponseEntity<?> login(@RequestBody UsuarioDTO creds) throws ExecutionException, InterruptedException {
+        Usuario usuario = usuarioService.buscarPorUsername(creds.username());
 
-        if (usuario == null || !passwordEncoder.matches(creds.getSenha(), usuario.getSenha())) {
+        if (usuario == null || !passwordEncoder.matches(creds.senha(), usuario.getSenha())) {
             return ResponseEntity.status(HttpServletResponse.SC_UNAUTHORIZED).body("Usuário ou senha inválidos");
         }
 
@@ -42,8 +41,9 @@ public class AuthController {
         return ResponseEntity.ok(Map.of("token", token));
     }
 
+
     @PostMapping("/register")
-    public ResponseEntity<?> register(@RequestBody UsuarioDTO.RegistroRequest dto) throws ExecutionException, InterruptedException {
+    public ResponseEntity<?> register(@RequestBody UsuarioDTO dto) throws ExecutionException, InterruptedException {
         usuarioService.registrar(dto);
         return ResponseEntity.ok("Usuário registrado com sucesso");
     }

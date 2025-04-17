@@ -19,17 +19,17 @@ public class LembreteService {
 
     private static final String COLLECTION = "lembretes";
 
-    public void criarLembrete(LembreteDTO.CriarLembreteRequest dto) {
+    public void criarLembrete(LembreteDTO dto) {
         Firestore db = FirestoreClient.getFirestore();
         String id = java.util.UUID.randomUUID().toString();
 
         Lembrete lembrete = new Lembrete(
                 id,
-                dto.getNome(),
-                dto.getDescricao(),
-                dto.getDataAlvo(),
-                dto.getHora(),
-                dto.getAutor()
+                dto.nome(),
+                dto.descricao(),
+                dto.dataAlvo(),
+                dto.hora(),
+                dto.autor()
         );
 
         db.collection(COLLECTION).document(id).set(lembrete);
@@ -41,14 +41,14 @@ public class LembreteService {
         ref.update("concluidoHoje", true);
     }
 
-    public List<Lembrete> listarTodos() throws ExecutionException, InterruptedException {
+    public List<LembreteDTO> listarTodos() throws ExecutionException, InterruptedException {
         Firestore db = FirestoreClient.getFirestore();
         ApiFuture<QuerySnapshot> future = db.collection(COLLECTION).get();
         List<QueryDocumentSnapshot> docs = future.get().getDocuments();
 
-        List<Lembrete> lembretes = new ArrayList<>();
+        List<LembreteDTO> lembretes = new ArrayList<>();
         for (QueryDocumentSnapshot doc : docs) {
-            lembretes.add(doc.toObject(Lembrete.class));
+            lembretes.add(doc.toObject(LembreteDTO.class));
         }
         return lembretes;
     }

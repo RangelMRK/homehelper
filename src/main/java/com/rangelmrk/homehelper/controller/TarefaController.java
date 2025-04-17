@@ -18,6 +18,7 @@ public class TarefaController {
 
     @GetMapping("/hoje")
     public List<Tarefa> listarHoje() throws Exception {
+        tarefaService.verificarEResetarSeNecessario();
         return tarefaService.listarDoDia();
     }
 
@@ -27,36 +28,33 @@ public class TarefaController {
     }
 
     @PostMapping
-    public void adicionar(@RequestBody TarefaDTO.CriarTarefa dto) {
-        if (dto.getNome() == null || dto.getNome().isEmpty()) {
+    public void adicionar(@RequestBody TarefaDTO dto) {
+        if (dto.nome() == null || dto.nome().isEmpty()) {
             throw new IllegalArgumentException("O nome da tarefa é obrigatório.");
         }
 
-        if (dto.getDescricao() == null || dto.getDescricao().isEmpty()) {
+        if (dto.descricao() == null || dto.descricao().isEmpty()) {
             throw new IllegalArgumentException("A descrição da tarefa é obrigatória.");
         }
 
         Tarefa nova = new Tarefa(
                 UUID.randomUUID().toString(),
-                dto.getNome(),
-                dto.getDescricao(),
-                dto.isRepetir(),
-                dto.getDias(),
-                dto.getDataAlvo(),
-                dto.getAutor()
+                dto.nome(),
+                dto.descricao(),
+                dto.repetir(),
+                dto.dias(),
+                dto.dataAlvo(),
+                dto.autor()
         );
         tarefaService.adicionar(nova);
     }
 
     @PutMapping("/toggle")
-    public void toggle(@RequestBody TarefaDTO.ToggleRequest dto) {
-        // Verificar se o ID é válido
-        if (dto.getId() == null || dto.getId().isEmpty()) {
+    public void toggle(@RequestBody TarefaDTO dto) {
+        if (dto.id() == null || dto.id().isEmpty()) {
             throw new IllegalArgumentException("ID da tarefa é obrigatório.");
         }
-
-        // Alternar conclusão da tarefa
-        tarefaService.alternarConclusao(dto.getId(), dto.isConcluido(), dto.getAutor());
+        tarefaService.alternarConclusao(dto.id(), dto.concluido(), dto.autor());
     }
 
     @DeleteMapping("/{id}")

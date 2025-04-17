@@ -18,13 +18,13 @@ public class TarefaService {
 
     private static final String COLLECTION = "tarefas";
     private static final String META_COLLECTION = "meta";
-    private static final String RESET_DOC_ID = "reset_meta";
+    private static final String RESET_DOC_ID = "reset_diario";
 
     public void adicionar(Tarefa nova) {
         Firestore db = FirestoreClient.getFirestore();
         nova.setId(UUID.randomUUID().toString());
 
-        // Se for uma tarefa repetitiva, garantir que não cria para datas passadas
+
         if (nova.isRepetir()) {
             List<String> diasValidos = nova.getDias().stream()
                     .filter(dia -> {
@@ -106,7 +106,7 @@ public class TarefaService {
     }
 
 
-    private void verificarEResetarSeNecessario() throws ExecutionException, InterruptedException {
+    public void verificarEResetarSeNecessario() throws ExecutionException, InterruptedException {
         Firestore db = FirestoreClient.getFirestore();
         DocumentReference ref = db.collection(META_COLLECTION).document(RESET_DOC_ID);
 

@@ -1,7 +1,6 @@
 package com.rangelmrk.homehelper.controller;
 
 import com.rangelmrk.homehelper.dto.LembreteDTO;
-import com.rangelmrk.homehelper.model.Lembrete;
 import com.rangelmrk.homehelper.service.LembreteService;
 import io.swagger.v3.oas.annotations.Operation;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -23,13 +22,13 @@ public class LembreteController {
 
     @Operation(summary = "Lista todos os lembretes")
     @GetMapping
-    public List<Lembrete> listar() throws ExecutionException, InterruptedException {
+    public List<LembreteDTO> listar() throws ExecutionException, InterruptedException {
         return service.listarTodos();
     }
 
     @Operation(summary = "Adiciona um novo lembrete")
     @PostMapping
-    public void adicionar(@RequestBody LembreteDTO.CriarLembreteRequest item) {
+    public void adicionar(@RequestBody LembreteDTO item) {
         service.criarLembrete(item);
     }
 

@@ -16,11 +16,11 @@ public class UsuarioService {
     private static final String COLLECTION = "usuarios";
     private final BCryptPasswordEncoder encoder = new BCryptPasswordEncoder();
 
-    public void registrar(UsuarioDTO.RegistroRequest dto) throws ExecutionException, InterruptedException {
+    public void registrar(UsuarioDTO dto) throws ExecutionException, InterruptedException {
         Firestore db = FirestoreClient.getFirestore();
 
         boolean existe = db.collection(COLLECTION)
-                .whereEqualTo("username", dto.getUsername())
+                .whereEqualTo("username", dto.username())
                 .get()
                 .get()
                 .getDocuments()
@@ -30,8 +30,8 @@ public class UsuarioService {
 
         Usuario novo = new Usuario(
                 UUID.randomUUID().toString(),
-                dto.getUsername(),
-                encoder.encode(dto.getSenha())
+                dto.username(),
+                encoder.encode(dto.senha())
         );
 
         db.collection(COLLECTION).document(novo.getId()).set(novo);

@@ -7,11 +7,12 @@ public class Tarefa {
     private String id;
     private String nome;
     private String descricao;
-    private boolean repetir; // Se a tarefa for repetitiva
-    private List<String> dias; // Dias da semana, se for repetitiva
-    private String dataAlvo; // Se for tarefa única, data de alvo
+    private boolean repetir;
+    private List<String> dias;
+    private String dataAlvo;
     private String autor;
-    private boolean concluido; // Estado da tarefa (concluída ou não)
+    private boolean concluido;
+    private String ultimaAtualizacao;
 
     public Tarefa(){};
 
@@ -42,4 +43,5 @@ public class Tarefa {
     public void setAutor(String autor) { this.autor = autor; }
     public boolean isConcluido() { return concluido; }
     public void setConcluido(boolean concluido) { this.concluido = concluido; }
+    public String getUltimaAtualizacao(){ return ultimaAtualizacao; }
 }

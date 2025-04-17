@@ -1,5 +1,6 @@
 package com.rangelmrk.homehelper.controller;
 
+import com.rangelmrk.homehelper.dto.GastoResumoDTO;
 import com.rangelmrk.homehelper.model.GastoRequest;
 import com.rangelmrk.homehelper.service.GoogleSheetsService;
 import io.swagger.v3.oas.annotations.Operation;
@@ -53,7 +54,10 @@ public class GastoController {
             @ApiResponse(responseCode = "400", description = "Parâmetro inválido", content = @Content)
     })
     @GetMapping("/valores")
-    public Map<String, Object> listarTotais(@RequestParam String mes) {
+    public GastoResumoDTO listarTotais(@RequestParam String mes) {
         return googleSheetsService.listarTotaisPorMes(mes);
     }
+
+
+
 }

@@ -8,6 +8,7 @@ import com.google.api.services.sheets.v4.Sheets;
 import com.google.api.services.sheets.v4.model.ValueRange;
 import com.google.auth.http.HttpCredentialsAdapter;
 import com.google.auth.oauth2.GoogleCredentials;
+import com.rangelmrk.homehelper.dto.GastoResumoDTO;
 import jakarta.annotation.PostConstruct;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
@@ -108,7 +109,7 @@ public class GoogleSheetsService {
         }
     }
 
-    public Map<String, Object> listarTotaisPorMes(String mes) {
+    public GastoResumoDTO listarTotaisPorMes(String mes) {
         Map<String, String> colunas = planilhaConfig.getTodasColunas();
         Map<String, Integer> linhas = planilhaConfig.getTodasLinhas();
 
@@ -141,9 +142,7 @@ public class GoogleSheetsService {
             }
         }
 
-        Map<String, Object> resultado = new LinkedHashMap<>();
-        resultado.put("total", total);
-        resultado.put("gastos", gastos);
-        return resultado;
+        return new GastoResumoDTO(mes, total, gastos);
     }
+
 }

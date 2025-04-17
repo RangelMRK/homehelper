@@ -10,8 +10,6 @@ public class Lembrete {
     private String autor;
     private boolean concluidoHoje;
 
-    // Construtores, getters e setters
-
     public Lembrete() {}
 
     public Lembrete(String id, String nome, String descricao, String dataAlvo, String hora, String autor) {
