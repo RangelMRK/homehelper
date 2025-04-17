@@ -1,6 +1,7 @@
 package com.rangelmrk.homehelper.controller;
 
 import com.rangelmrk.homehelper.dto.TarefaDTO;
+import com.rangelmrk.homehelper.dto.TarefaToggleDTO;
 import com.rangelmrk.homehelper.model.Tarefa;
 import com.rangelmrk.homehelper.service.TarefaService;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -50,7 +51,7 @@ public class TarefaController {
     }
 
     @PutMapping("/toggle")
-    public void toggle(@RequestBody TarefaDTO dto) {
+    public void toggle(@RequestBody TarefaToggleDTO dto) {
         if (dto.id() == null || dto.id().isEmpty()) {
             throw new IllegalArgumentException("ID da tarefa é obrigatório.");
         }
